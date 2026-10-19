@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WWSG Proposal Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#F2F3F5; --surface:#FFFFFF; --surface-2:#F7F8FA; --ink:#1A2130; --muted:#5A6373; --line:#DCE0E6;
+  --accent:#C9571A; --accent-ink:#FFFFFF; --accent-soft:#FBE9DC; --orange:#ED7D31;
+  --warn:#9A5B00; --warn-soft:#FFF3D6; --bad:#B42318; --bad-soft:#FDE7E5; --ok:#1F7A4D;
+  --page:#FFFFFF; --page-ink:#111111; --shadow:0 1px 2px rgba(20,28,40,.06),0 8px 24px rgba(20,28,40,.08);
+  --ui:"Libre Franklin",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --doc:Calibri,Carlito,"Lato",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11151B; --surface:#191F28; --surface-2:#1F2631; --ink:#E6E9EE; --muted:#9BA4B3; --line:#2B3340;
+    --accent:#F08A4B; --accent-ink:#1A1208; --accent-soft:#3A2518; --warn:#F2C46B; --warn-soft:#3A2F14;
+    --bad:#FF9C8F; --bad-soft:#3D1D1A; --ok:#6FD3A0; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11151B; --surface:#191F28; --surface-2:#1F2631; --ink:#E6E9EE; --muted:#9BA4B3; --line:#2B3340;
+  --accent:#F08A4B; --accent-ink:#1A1208; --accent-soft:#3A2518; --warn:#F2C46B; --warn-soft:#3A2F14;
+  --bad:#FF9C8F; --bad-soft:#3D1D1A; --ok:#6FD3A0; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1320px;margin:0 auto}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:20px 16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.brand h1 span{color:var(--accent)}
+.meta{color:var(--muted);font-size:12.5px}
+.grid{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:960px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.col{display:flex;flex-direction:column;gap:16px}
+h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=url],select,textarea{font:inherit;font-size:14px;font-weight:400;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%}
+textarea{resize:vertical;line-height:1.5}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.filename{font-size:12.5px;color:var(--muted);word-break:break-word}
+.filename b{color:var(--ink);font-weight:600}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;font-weight:600;font-size:13px}
+button:hover{background:var(--surface-2)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);padding:11px 16px;font-size:14.5px}
+button.primary:hover{filter:brightness(1.06);background:var(--accent)}
+button.primary:disabled{opacity:.5;cursor:not-allowed}
+button.link{border:0;background:none;padding:2px 4px;color:var(--accent);font-weight:600}
+button.icon{padding:4px 8px;font-size:13px;line-height:1}
+.search{position:relative}
+.results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);max-height:340px;overflow:auto;z-index:20;padding:4px}
+.res{display:flex;flex-direction:column;gap:1px;padding:7px 9px;border-radius:6px;cursor:pointer}
+.res[aria-selected="true"],.res:hover{background:var(--accent-soft)}
+.res .n{font-weight:600}
+.res .t{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.res .added{font-size:11px;color:var(--ok);font-weight:700}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.check{flex-direction:row;align-items:center;gap:8px;font-weight:500}
+.paste-out{font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.paste-out .miss{color:var(--bad)}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.card-head{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px}
+.thumb{width:52px;height:52px;border-radius:6px;background:var(--surface-2);object-fit:cover;display:block;border:1px solid var(--line)}
+.thumb.empty{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-align:center;line-height:1.2}
+.card-title{font-weight:700;font-size:14px;line-height:1.3}
+.card-sub{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.chip{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.card-actions{display:flex;gap:4px;align-items:center}
+@media (max-width:520px){.card-head{grid-template-columns:52px minmax(0,1fr)}.card-actions{grid-column:1 / -1;justify-content:flex-end}}
+.card-body{border-top:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2);border-radius:0 0 9px 9px}
+.feepreview{font-size:12.5px;color:var(--muted);font-style:italic}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.empty-state{border:1px dashed var(--line);border-radius:9px;padding:18px;text-align:center;color:var(--muted);font-size:13px}
+.example{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--accent-soft);border-radius:8px;padding:8px 12px;font-size:12.5px}
+.status{font-size:13px;min-height:1.2em}
+.status.err{color:var(--bad)} .status.ok{color:var(--ok)}
+/* Preview: a Letter page rendered like the Word file */
+.preview-wrap{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.preview-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.pages{max-height:calc(100vh - 110px);overflow:auto;border-radius:10px;background:color-mix(in srgb,var(--bg) 70%,#8892a0 30%);padding:20px}
+@media (max-width:960px){.preview-wrap{position:static}.pages{max-height:none}}
+.page{background:var(--page);color:var(--page-ink);width:100%;max-width:816px;margin:0 auto;padding:clamp(20px,9%,96px);box-shadow:0 2px 10px rgba(0,0,0,.18);font-family:var(--doc);font-size:11pt;line-height:1.16}
+.sp{display:flow-root;margin-bottom:22px}
+.sp img,.sp .noimg{float:left;width:2in;max-width:36%;aspect-ratio:1/1;height:auto;margin:4px 12px 6px 0;object-fit:cover}
+.sp .noimg{background:repeating-linear-gradient(45deg,#f1f1f1 0 8px,#e7e7e7 8px 16px);display:flex;align-items:center;justify-content:center;color:#777;font-size:9pt;text-align:center;padding:6px}
+.sp h3{margin:0 0 8pt;font-size:12pt;font-weight:700;color:var(--orange);text-transform:uppercase;line-height:1.2}
+.sp p{margin:0 0 8pt}
+.sp .fee{font-style:italic;clear:none}
+.sp .fee a{color:var(--orange);font-weight:700;font-style:italic;text-decoration:underline}
+.sp .missing{color:#B42318;font-style:italic}
+.doc-empty{color:#666;text-align:center;padding:60px 0;font-family:var(--ui)}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}}
+.card.focus{border-color:var(--accent)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.lock form{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+.lock h1{margin:0;font-size:18px}
+.lock h1 span{color:var(--accent)}
+.lock .err{color:var(--bad);font-size:13px;min-height:1.2em;margin:0}
+body.locked .wrap{display:none}
+</style>
+
+</head><body>
+<div class="lock" id="lock" hidden>
+  <form id="lockForm" autocomplete="off">
+    <h1>WWSG <span>Proposal Builder</span></h1>
+    <label for="pw">Team password<input type="password" id="pw" autofocus></label>
+    <button type="submit" class="primary">Open</button>
+    <p class="err" id="pwErr" role="alert"></p>
+  </form>
+</div>
+<script>
+(function(){
+  var H = "6b04952ccf3fe89c3b280cf93ff9379f2837289ed2b4d09a8bd4e43171017364";
+  function ok(){ try { return localStorage.getItem('wwsg-auth') === H; } catch(e){ return false; } }
+  if (ok()) return;
+  document.body.classList.add('locked');
+  var lock = document.getElementById('lock'); lock.hidden = false;
+  document.getElementById('lockForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var v = document.getElementById('pw').value;
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+    var hex = Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    if (hex === H){ try { localStorage.setItem('wwsg-auth', H); } catch(err){} lock.hidden = true; document.body.classList.remove('locked'); }
+    else { document.getElementById('pwErr').textContent = 'That password is not right. Ask your team lead for it.'; document.getElementById('pw').select(); }
+  });
+})();
+</script>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>WWSG <span>Proposal Builder</span></h1>
+      <span class="meta" id="dataMeta"></span>
+    </div>
+    <button type="button" id="newBtn">Start new proposal</button>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel" aria-labelledby="h-details">
+        <h2 id="h-details">Proposal</h2>
+        <div class="row2">
+          <label for="client">Client<input type="text" id="client" placeholder="e.g. McKinsey" autocomplete="off"></label>
+          <label for="topic">Topic<input type="text" id="topic" placeholder="e.g. Geopolitics" autocomplete="off"></label>
+        </div>
+        <div class="filename" id="filename"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-add">
+        <h2 id="h-add">Add speakers</h2>
+        <div class="search">
+          <label for="q">Search by name<input type="text" id="q" placeholder="Start typing a speaker's name…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="results"></label>
+          <div class="results" id="results" role="listbox" hidden></div>
+        </div>
+        <details id="pasteBox">
+          <summary class="hint" style="cursor:pointer">Paste a list of names instead</summary>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+            <textarea id="pasteList" rows="4" placeholder="One name per line, or separated by commas"></textarea>
+            <div><button type="button" id="pasteBtn">Add these speakers</button></div>
+            <div class="paste-out" id="pasteOut"></div>
+          </div>
+        </details>
+        <label class="check" for="offsite"><input type="checkbox" id="offsite"> Include speakers not listed on wwsg.com</label>
+      </section>
+
+      <section class="panel" aria-labelledby="h-sel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <h2 id="h-sel">Speakers in this proposal <span id="count"></span></h2>
+        </div>
+        <div id="exampleNote" class="example" hidden>
+          <span>This is an example proposal. Edit it, or clear it to start fresh.</span>
+          <button type="button" class="link" id="clearExample">Clear example</button>
+        </div>
+        <div class="list" id="list"></div>
+        <button type="button" class="primary" id="genBtn">Download Word proposal</button>
+        <div class="status" id="status" role="status"></div>
+      </section>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="preview-head">
+        <h2>Preview</h2>
+        <span class="meta">Layout of the Word file. Fonts render slightly differently in Word.</span>
+      </div>
+      <div class="pages"><div class="page" id="page"></div></div>
+    </div>
+  </div>
+</div>
+
+<datalist id="travelOpts">
+  <option value="First-Class Travel and Expenses for one (1)">
+  <option value="First-Class Travel and Expenses for two (2)">
+  <option value="Business-Class Travel and Expenses for one (1)">
+  <option value="Business-Class Travel and Expenses for two (2)">
+  <option value="First-Class Travel and Expenses for two (2) and Business-Class Travel and Expenses for three (3)">
+</datalist>
+
+<script src="gen.js"></script>
+<script>
+let TEMPLATE = null;
+const G = window.WWSGGen;
+const HONS = ['Mr.','Ms.','Mrs.','Dr.','Sir','Dame','Gen.','Adm.','Amb.','Gov.','Sen.','Secretary','VP','President','Prime Minister',''];
+const DEFAULT_TRAVEL = 'First-Class Travel and Expenses for one (1)';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let SPEAKERS = [], BYID = {};
+const photoCache = {};       // chunk -> {id: b64}
+const photoLoading = {};
+let state = { client:'', topic:'', offsite:false, items:[], example:false };
+let openId = null;
+
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem('wwsg-proposal-draft')||'null'); } catch(e){ return null; } },
+  set(v){ try { localStorage.setItem('wwsg-proposal-draft', JSON.stringify(v)); } catch(e){} }
+};
+function save(){ store.set({ ...state, items: state.items.map(it => ({...it, customPhoto: undefined})) }); }
+
+function norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+
+function newItem(s){
+  return { id:s.id, name:s.name, tag:s.tag, bioText:null, hon:s.hon||'Mr.', last:s.last, fee:'$xx', travel:DEFAULT_TRAVEL,
+           url:s.url, link:s.link, customPhoto:null };
+}
+
+async function loadChunk(n){
+  if (photoCache[n]) return photoCache[n];
+  if (!photoLoading[n]) photoLoading[n] = fetch(`photos/p${n}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => (photoCache[n] = j));
+  return photoLoading[n];
+}
+function photoSrc(it){
+  if (it.customPhoto) return 'data:image/jpeg;base64,' + it.customPhoto;
+  const s = BYID[it.id]; if (!s || s.ph === undefined) return null;
+  const c = photoCache[s.ph]; if (!c) { loadChunk(s.ph).then(render); return undefined; }
+  return c[s.id] ? 'data:image/jpeg;base64,' + c[s.id] : null;
+}
+function bioParas(it){ return it.bioText != null ? G.textToParas(it.bioText) : (BYID[it.id]?.bio || []); }
+function headingOf(it){ return it.tag ? `${it.name} - ${it.tag}` : it.name; }
+function feeOf(it){ return G.feeLine({ honorific: it.hon, lastName: it.last, fee: it.fee, travel: it.travel }); }
+
+/* ---------- search ---------- */
+function search(q){
+  const nq = norm(q); if (!nq) return [];
+  const words = nq.split(' ');
+  const out = [];
+  for (const s of SPEAKERS){
+    if (!s.site && !state.offsite) continue;
+    const hay = s._n;
+    let score = -1;
+    if (hay.startsWith(nq)) score = 0;
+    else if (s._w.some(w => w.startsWith(nq))) score = 1;
+    else if (words.every(w => s._w.some(x => x.startsWith(w)))) score = 2;
+    else if (hay.includes(nq)) score = 3;
+    if (score >= 0) out.push([score + (s.site ? 0 : 5), s]);
+  }
+  out.sort((a,b) => a[0]-b[0] || a[1].title.localeCompare(b[1].title));
+  return out.slice(0, 12).map(x => x[1]);
+}
+let resIdx = 0, resList = [];
+function showResults(){
+  const q = $('#q').value;
+  resList = search(q); resIdx = 0;
+  const box = $('#results');
+  if (!q.trim()){ box.hidden = true; $('#q').setAttribute('aria-expanded','false'); return; }
+  const added = new Set(state.items.map(i => i.id));
+  box.innerHTML = resList.length ? resList.map((s,i) => `
+    <div class="res" role="option" id="res-${i}" data-id="${s.id}" aria-selected="${i===0}">
+      <span class="n">${esc(s.name)} ${added.has(s.id) ? '<span class="added">· added</span>' : ''} ${!s.site ? '<span class="chip">Not on website</span>' : ''}</span>
+      <span class="t">${esc(s.tag || (s.bio.length ? '' : 'No short bio in export'))}</span>
+    </div>`).join('') : `<div class="res"><span class="t">No speaker matches “${esc(q)}”.${state.offsite ? '' : ' Try including speakers not listed on wwsg.com.'}</span></div>`;
+  box.hidden = false; $('#q').setAttribute('aria-expanded','true');
+}
+function addSpeaker(id){
+  const s = BYID[id]; if (!s) return false;
+  if (state.items.some(i => i.id === id)) return false;
+  if (state.example){ state.example = false; }
+  state.items.push(newItem(s));
+  if (s.ph !== undefined) loadChunk(s.ph).then(render);
+  save(); render(); return true;
+}
+$('#q').addEventListener('input', showResults);
+$('#q').addEventListener('focus', () => { if ($('#q').value) showResults(); });
+$('#q').addEventListener('keydown', e => {
+  const box = $('#results'); if (box.hidden) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    resIdx = Math.max(0, Math.min(resList.length-1, resIdx + (e.key === 'ArrowDown' ? 1 : -1)));
+    box.querySelectorAll('.res').forEach((el,i) => el.setAttribute('aria-selected', i===resIdx));
+    box.querySelector(`#res-${resIdx}`)?.scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter'){
+    e.preventDefault();
+    if (resList[resIdx]){ addSpeaker(resList[resIdx].id); $('#q').value=''; box.hidden = true; }
+  } else if (e.key === 'Escape'){ box.hidden = true; }
+});
+$('#results').addEventListener('mousedown', e => {
+  const r = e.target.closest('.res[data-id]'); if (!r) return;
+  e.preventDefault(); addSpeaker(+r.dataset.id); $('#q').value=''; $('#results').hidden = true; $('#q').focus();
+});
+document.addEventListener('click', e => { if (!e.target.closest('.search')) $('#results').hidden = true; });
+$('#offsite').addEventListener('change', e => { state.offsite = e.target.checked; save(); if ($('#q').value) showResults(); });
+
+$('#pasteBtn').addEventListener('click', () => {
+  const names = $('#pasteList').value.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+  const added = [], missed = [], ambiguous = [];
+  names.forEach(n => {
+    const nn = norm(n);
+    const pool = SPEAKERS.filter(s => s.site || state.offsite);
+    let hit = pool.filter(s => s._t === nn || s._n === nn);
+    if (!hit.length) hit = pool.filter(s => s._t.includes(nn) || s._n.includes(nn));
+    if (!hit.length){ const r = search(n); if (r.length === 1) hit = r; else if (r.length > 1 && norm(r[0].title) !== norm(r[1].title) && r[0]._n.startsWith(nn)) hit = [r[0]]; }
+    if (hit.length === 1){ addSpeaker(hit[0].id); added.push(hit[0].name); }
+    else if (hit.length > 1) ambiguous.push(`${n} (${hit.slice(0,3).map(h=>h.name).join(', ')}${hit.length>3?'…':''})`);
+    else missed.push(n);
+  });
+  $('#pasteOut').innerHTML =
+    (added.length ? `<div>Added ${added.length}: ${esc(added.join(', '))}</div>` : '') +
+    (ambiguous.length ? `<div class="miss">More than one match, add with search: ${esc(ambiguous.join('; '))}</div>` : '') +
+    (missed.length ? `<div class="miss">Not found: ${esc(missed.join(', '))}</div>` : '');
+  if (!ambiguous.length && !missed.length) $('#pasteList').value = '';
+});
+
+/* ---------- selected list ---------- */
+function flags(it){
+  const s = BYID[it.id]; const f = [];
+  if (!bioParas(it).length) f.push(['No short bio','bad']);
+  if (s && s.longbio && it.bioText == null) f.push(['Full bio (no short bio on file)','']);
+  const ph = photoSrc(it);
+  if (ph === null) f.push(['No photo','']);
+  if (!it.url) f.push(['No webpage link','']);
+  if (s && !s.site) f.push(['Not on website','']);
+  return f;
+}
+function renderList(){
+  const list = $('#list');
+  $('#count').textContent = state.items.length ? `(${state.items.length})` : '';
+  $('#exampleNote').hidden = !state.example;
+  if (!state.items.length){ list.innerHTML = `<div class="empty-state">No speakers yet. Search above to add them in the order they should appear.</div>`; return; }
+  const active = document.activeElement?.id;
+  list.innerHTML = state.items.map((it, i) => {
+    const ph = photoSrc(it);
+    const open = openId === it.id;
+    const bioVal = it.bioText != null ? it.bioText : G.parasToText(BYID[it.id]?.bio || []);
+    return `<div class="card ${open?'focus':''}" data-id="${it.id}">
+      <div class="card-head">
+        ${ph ? `<img class="thumb" src="${ph}" alt="">` : `<div class="thumb empty">${ph===undefined?'…':'No photo'}</div>`}
+        <div style="min-width:0">
+          <div class="card-title">${i+1}. ${esc(it.name)}</div>
+          <div class="card-sub">${esc(it.tag || 'No tagline')}</div>
+          <div class="chips">${flags(it).map(([t,c]) => `<span class="chip ${c}">${t}</span>`).join('')}</div>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="icon" data-act="up" aria-label="Move up" ${i===0?'disabled':''}>↑</button>
+          <button type="button" class="icon" data-act="down" aria-label="Move down" ${i===state.items.length-1?'disabled':''}>↓</button>
+          <button type="button" class="icon" data-act="edit" aria-expanded="${open}">${open?'Done':'Edit'}</button>
+          <button type="button" class="icon" data-act="remove" aria-label="Remove ${esc(it.name)}">✕</button>
+        </div>
+      </div>
+      ${open ? `<div class="card-body">
+        <div class="row2">
+          <label for="f-name-${it.id}">Name in heading<input type="text" id="f-name-${it.id}" data-f="name" value="${esc(it.name)}"></label>
+          <label for="f-url-${it.id}">Webpage link<input type="url" id="f-url-${it.id}" data-f="url" value="${esc(it.url)}" placeholder="https://wwsg.com/speakers/…"></label>
+        </div>
+        <label for="f-tag-${it.id}">Tagline (after the name, shown in caps)<textarea id="f-tag-${it.id}" data-f="tag" rows="2">${esc(it.tag)}</textarea></label>
+        <label for="f-bio-${it.id}">Short bio <span style="font-weight:400">Blank line between paragraphs. Italics from the export are kept until you edit.</span>
+          <textarea id="f-bio-${it.id}" data-f="bioText" rows="8" placeholder="No short bio in the export. Paste one here.">${esc(bioVal)}</textarea></label>
+        ${it.bioText != null ? `<div><button type="button" class="link" data-act="resetbio">Restore bio from export</button></div>` : ''}
+        <div class="row2">
+          <label for="f-hon-${it.id}">Title<select id="f-hon-${it.id}" data-f="hon">${HONS.map(h => `<option value="${esc(h)}" ${h===it.hon?'selected':''}>${h||'(none)'}</option>`).join('')}${HONS.includes(it.hon)?'':`<option selected>${esc(it.hon)}</option>`}</select></label>
+          <label for="f-last-${it.id}">Referred to as<input type="text" id="f-last-${it.id}" data-f="last" value="${esc(it.last)}"></label>
+        </div>
+        <div class="row2">
+          <label for="f-fee-${it.id}">Honorarium<input type="text" id="f-fee-${it.id}" data-f="fee" value="${esc(it.fee)}"></label>
+          <label for="f-link-${it.id}">Link text name<input type="text" id="f-link-${it.id}" data-f="link" value="${esc(it.link)}"></label>
+        </div>
+        <label for="f-travel-${it.id}">Travel and expenses<input type="text" id="f-travel-${it.id}" data-f="travel" list="travelOpts" value="${esc(it.travel)}"></label>
+        <div class="feepreview">${esc(feeOf(it))}${it.url ? ` For additional information, please visit: ${esc(it.link)}’s Webpage.` : ''}</div>
+        <div class="photo-row">
+          <label class="check" for="f-photo-${it.id}" style="font-weight:600">Replace photo <input type="file" id="f-photo-${it.id}" accept="image/*" data-f="photo"></label>
+          ${it.customPhoto ? `<button type="button" class="link" data-act="resetphoto">Use website photo</button>` : ''}
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+  if (active && document.getElementById(active)) { const el = document.getElementById(active); el.focus(); if (el.setSelectionRange && el.dataset.caret) {} }
+}
+
+$('#list').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const id = +b.closest('.card').dataset.id;
+  const i = state.items.findIndex(x => x.id === id); const it = state.items[i];
+  const act = b.dataset.act;
+  if (act === 'up' && i > 0) [state.items[i-1], state.items[i]] = [state.items[i], state.items[i-1]];
+  if (act === 'down' && i < state.items.length-1) [state.items[i+1], state.items[i]] = [state.items[i], state.items[i+1]];
+  if (act === 'remove'){ state.items.splice(i,1); if (openId === id) openId = null; }
+  if (act === 'edit') openId = openId === id ? null : id;
+  if (act === 'resetbio') it.bioText = null;
+  if (act === 'resetphoto') it.customPhoto = null;
+  save(); render();
+});
+let typingTimer;
+$('#list').addEventListener('input', e => {
+  const f = e.target.dataset.f; if (!f || f === 'photo') return;
+  const id = +e.target.closest('.card').dataset.id;
+  const it = state.items.find(x => x.id === id);
+  it[f] = e.target.value;
+  save();
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => { renderPreview(); updateCardMeta(it); }, 150);
+});
+function updateCardMeta(it){
+  const card = document.querySelector(`.card[data-id="${it.id}"]`); if (!card) return;
+  card.querySelector('.card-title').textContent = `${state.items.indexOf(it)+1}. ${it.name}`;
+  card.querySelector('.card-sub').textContent = it.tag || 'No tagline';
+  card.querySelector('.chips').innerHTML = flags(it).map(([t,c]) => `<span class="chip ${c}">${t}</span>`).join('');
+  const fp = card.querySelector('.feepreview');
+  if (fp) fp.textContent = feeOf(it) + (it.url ? ` For additional information, please visit: ${it.link}’s Webpage.` : '');
+}
+$('#list').addEventListener('change', async e => {
+  if (e.target.dataset.f === 'hon'){ render(); return; }
+  if (e.target.dataset.f !== 'photo') return;
+  const file = e.target.files?.[0]; if (!file) return;
+  const id = +e.target.closest('.card').dataset.id;
+  const it = state.items.find(x => x.id === id);
+  try { it.customPhoto = await squareJpeg(file); setStatus(''); }
+  catch(err){ setStatus('That image could not be read. Try a JPG or PNG.', 'err'); }
+  render();
+});
+async function squareJpeg(file){
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url; });
+  const s = Math.min(img.naturalWidth, img.naturalHeight), N = 400;
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,N,N);
+  g.drawImage(img, (img.naturalWidth - s)/2, (img.naturalHeight - s)*0.2, s, s, 0, 0, N, N);
+  URL.revokeObjectURL(url);
+  return c.toDataURL('image/jpeg', 0.88).split(',')[1];
+}
+
+/* ---------- preview ---------- */
+function renderPreview(){
+  const page = $('#page');
+  if (!state.items.length){ page.innerHTML = `<div class="doc-empty">Add speakers to see the proposal.</div>`; return; }
+  page.innerHTML = state.items.map(it => {
+    const ph = photoSrc(it);
+    const paras = bioParas(it);
+    return `<div class="sp">
+      ${ph ? `<img src="${ph}" alt="">` : `<div class="noimg">${ph===undefined?'Loading photo…':'No photo'}</div>`}
+      <h3>${esc(headingOf(it))}</h3>
+      ${paras.length ? paras.map(p => `<p>${p.map(r => { let t = esc(r.text); if (r.i) t = `<i>${t}</i>`; if (r.b) t = `<b>${t}</b>`; return t; }).join('')}</p>`).join('') : `<p class="missing">No short bio. Add one under Edit.</p>`}
+      <p class="fee">${esc(feeOf(it))}${it.url ? ` For additional information, please visit: <a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.link)}’s Webpage.</a>` : ''}</p>
+    </div>`;
+  }).join('');
+}
+
+function fileName(){
+  const c = state.client.trim(), t = state.topic.trim();
+  const base = `Proposal for ${c || 'Client'}${t ? ' - ' + t : ''}`;
+  return base.replace(/[\\/:*?"<>|]+/g, '-') + '.docx';
+}
+function render(){
+  $('#filename').innerHTML = `Saves as <b>${esc(fileName())}</b>`;
+  renderList(); renderPreview();
+  $('#genBtn').disabled = !state.items.length;
+}
+['client','topic'].forEach(k => $('#'+k).addEventListener('input', e => { state[k] = e.target.value; if (state.example) state.example = false; $('#exampleNote').hidden = true; save(); $('#filename').innerHTML = `Saves as <b>${esc(fileName())}</b>`; }));
+
+function setStatus(msg, cls){ const s = $('#status'); s.textContent = msg; s.className = 'status' + (cls ? ' ' + cls : ''); }
+
+function b64ToBytes(b64){ const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; }
+
+let downloadsP = null;
+$('#genBtn').addEventListener('click', async () => {
+  const btn = $('#genBtn');
+  const noBio = state.items.filter(it => !bioParas(it).length).map(it => it.name);
+  btn.disabled = true; setStatus('Building the Word file…');
+  try {
+    await Promise.all(state.items.map(it => BYID[it.id]?.ph !== undefined ? loadChunk(BYID[it.id].ph) : null));
+    const list = state.items.map(it => {
+      const s = BYID[it.id];
+      const b64 = it.customPhoto || (s && s.ph !== undefined ? photoCache[s.ph]?.[s.id] : null);
+      return { heading: headingOf(it), bio: bioParas(it), feeLine: feeOf(it), url: it.url.trim(), linkName: it.link, imageBytes: b64 ? b64ToBytes(b64) : null };
+    });
+    if (!TEMPLATE) TEMPLATE = await fetch('template.docx').then(r => { if (!r.ok) throw new Error('Template file missing.'); return r.arrayBuffer(); });
+    const zip = await G.buildDocx(JSZip, TEMPLATE, list, { title: fileName().replace(/\.docx$/,''), author: 'WWSG' });
+    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression:'DEFLATE' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName(); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    setStatus(noBio.length ? `Downloaded. Missing short bio: ${noBio.join(', ')}.` : 'Downloaded.', noBio.length ? 'err' : 'ok');
+  } catch (err){
+    const code = err && err.code;
+    if (code === 'declined') setStatus('Download cancelled.');
+    else if (code === 'rate_limited') setStatus('A download prompt is already open. Finish it, then try again.', 'err');
+    else setStatus('The Word file could not be built. ' + (err && err.message ? err.message : ''), 'err');
+  } finally { btn.disabled = !state.items.length; }
+});
+
+$('#newBtn').addEventListener('click', () => { state = { client:'', topic:'', offsite:state.offsite, items:[], example:false }; openId = null; $('#client').value=''; $('#topic').value=''; $('#pasteOut').innerHTML=''; save(); setStatus(''); render(); $('#client').focus(); });
+$('#clearExample').addEventListener('click', () => $('#newBtn').click());
+
+/* ---------- boot ---------- */
+(async function boot(){
+  try {
+    SPEAKERS = await fetch('speakers.json').then(r => r.json());
+  } catch(e){ $('#page').innerHTML = '<div class="doc-empty">Speaker data could not load. Reload the page.</div>'; return; }
+  SPEAKERS.forEach(s => { BYID[s.id] = s; s._n = norm(s.name); s._t = norm(s.title); s._w = (s._n + ' ' + s._t).split(' '); });
+  const onsite = SPEAKERS.filter(s => s.site).length;
+  $('#dataMeta').textContent = `${onsite} speakers from wwsg.com · short bios from the Sept 24, 2026 export`;
+  const saved = store.get();
+  if (saved && Array.isArray(saved.items) && (saved.items.length || saved.client || saved.topic)){
+    state = { ...state, ...saved, items: saved.items.filter(it => BYID[it.id]) };
+  } else {
+    state.client = 'McKinsey'; state.topic = 'Geopolitics'; state.example = true;
+    ['Ian Bremmer','Parag Khanna','Anders Fogh Rasmussen'].forEach(n => { const s = SPEAKERS.find(x => x.title === n); if (s) state.items.push(newItem(s)); });
+  }
+  $('#client').value = state.client; $('#topic').value = state.topic; $('#offsite').checked = !!state.offsite;
+  state.items.forEach(it => { const s = BYID[it.id]; if (s?.ph !== undefined) loadChunk(s.ph).then(render); });
+  render();
+})();
+</script>
+
+</body></html>
