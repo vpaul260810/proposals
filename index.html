@@ -239,7 +239,7 @@ function newItem(s){
 
 async function loadChunk(n){
   if (photoCache[n]) return photoCache[n];
-  if (!photoLoading[n]) photoLoading[n] = fetch(`photos/p${n}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => (photoCache[n] = j));
+  if (!photoLoading[n]) photoLoading[n] = fetch(`photos/p${n}.json`).then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => fetch(`p${n}.json`).then(r => r.ok ? r.json() : {})).catch(() => ({})).then(j => (photoCache[n] = j));
   return photoLoading[n];
 }
 function photoSrc(it){
